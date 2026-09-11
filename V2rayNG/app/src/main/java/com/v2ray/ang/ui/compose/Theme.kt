@@ -3,6 +3,7 @@ package com.v2ray.ang.ui.compose
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +18,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -64,35 +68,48 @@ private val LightColor = lightColorScheme(
     surfaceContainerHighest = Color(0xFFE5E5E5), // Light Gray
 )
 
+/* Палитра Uziwi «Aurora Glass» — та же, что в мини-приложении и в боте.
+ * Менять только здесь: Material3 разводит эти цвета по всему интерфейсу сам.
+ *
+ * ground  #08081A  — тёмный фон, поверх него живёт градиент
+ * indigo  #6366F1  — основной акцент
+ * violet  #7C3AED  — второй акцент, из него градиенты
+ * peri    #A5B4FC  — светлый барвинок, им подписи и обводки
+ * text    #E0E0F0 / muted #6B6B8F / green #4ADE80 / red #FCA5A5
+ */
 private val DarkColor = darkColorScheme(
-    primary = Color(0xFFC0C0C0), // Silver Gray
-    onPrimary = Color(0xFF303030), // Dark Gray
-    primaryContainer = Color(0xFF474747), // Gray
-    onPrimaryContainer = Color(0xFFE0E0E0), // Light Gray
-    secondary = Color(0xFFf97910), // Orange
-    onSecondary = Color(0xFF4E2600), // Dark Brown
-    secondaryContainer = Color(0xFF6F3800), // Brown
-    onSecondaryContainer = Color(0xFFFFE8D6), // Pale Orange
-    tertiary = Color(0xFF83D6B5), // Mint Green
-    onTertiary = Color(0xFF00382E), // Dark Teal
-    tertiaryContainer = Color(0xFF005143), // Teal
-    onTertiaryContainer = Color(0xFFA0F2D0), // Light Green
-    error = Color(0xFFFFB4AB), // Light Red
-    errorContainer = Color(0xFF93000A), // Dark Red
-    onError = Color(0xFF690005), // Deep Red
-    onErrorContainer = Color(0xFFFFDAD6), // Light Red
-    background = Color(0xFF1C1B1F), // Near Black
-    onBackground = Color(0xFFE6E1E5), // Light Gray
-    surface = Color(0xFF1C1B1F), // Near Black
-    onSurface = Color(0xFFE6E1E5), // Light Gray
-    surfaceVariant = Color(0xFF49454F), // Dark Gray
-    onSurfaceVariant = Color(0xFFCAC4D0), // Light Gray
-    outline = Color(0xFF938F99), // Grayish Purple
-    outlineVariant = Color(0xFF49454F), // Dark Gray
-    inverseSurface = Color(0xFFE6E1E5), // Light Gray
-    inverseOnSurface = Color(0xFF1C1B1F), // Near Black
-    inversePrimary = Color(0xFF000000), // Black
-    scrim = Color(0xFF000000), // Black
+    primary = Color(0xFF6366F1),              // indigo — главная кнопка
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFF7C3AED),     // violet
+    onPrimaryContainer = Color(0xFFE0E0F0),
+    secondary = Color(0xFFA5B4FC),            // peri
+    onSecondary = Color(0xFF1B1836),
+    secondaryContainer = Color(0xFF2A2552),
+    onSecondaryContainer = Color(0xFFE0E0F0),
+    tertiary = Color(0xFF4ADE80),             // зелёный «подключено»
+    onTertiary = Color(0xFF06281A),
+    tertiaryContainer = Color(0xFF14532D),
+    onTertiaryContainer = Color(0xFFBBF7D0),
+    error = Color(0xFFFCA5A5),
+    onError = Color(0xFF3F0A0A),
+    errorContainer = Color(0xFF5A1A1A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    // Фон прозрачный: под интерфейсом лежит фирменный градиент (AuroraBackground).
+    // Сделай его непрозрачным — градиент пропадёт, и приложение станет обычным.
+    background = Color(0x0008081A),
+    onBackground = Color(0xFFE0E0F0),
+    surface = Color(0xB3141230),               // стекло: 70% непрозрачности
+    onSurface = Color(0xFFE0E0F0),
+    surfaceVariant = Color(0xB31B1836),
+    onSurfaceVariant = Color(0xFF9E9EC4),
+    outline = Color(0x59A5B4FC),               // обводки — барвинок на 35%
+    outlineVariant = Color(0x33A5B4FC),
+    inverseSurface = Color(0xFFE0E0F0),
+    inverseOnSurface = Color(0xFF08081A),
+    inversePrimary = Color(0xFF4F46E5),
+    scrim = Color(0xFF000000),
+    surfaceTint = Color(0xFF6366F1),
+)
     surfaceTint = Color(0xFFC0C0C0), // Silver Gray
     surfaceContainerLowest = Color(0xFF0F0F12), // Near Black
     surfaceContainerLow = Color(0xFF1A191D), // Dark Gray
@@ -151,15 +168,58 @@ object ThemeManager {
 
 @Composable
 fun resolveDarkTheme(): Boolean {
-    val mode by ThemeManager.themeMode.collectAsState()
-    return when (mode) {
-        "1" -> false
-        "2" -> true
-        else -> isSystemInDarkTheme()
-    }
+    // У Uziwi светлой темы нет и не будет: «Aurora Glass» — тёмный стиль,
+    // на белом фоне он рассыпается. Системную настройку намеренно
+    // игнорируем, иначе половина людей увидит чужое приложение.
+    return true
 }
 
 val LocalDarkTheme = compositionLocalOf { false }
+
+/** Фон Uziwi: тёмная основа и два пятна северного сияния по углам.
+ *
+ * Рисуется один раз под всем содержимым. Не картинка и не анимация —
+ * два радиальных градиента: это ничего не весит, не греет телефон
+ * и выглядит одинаково на любом экране. */
+@Composable
+private fun AuroraBackground(content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF08081A))
+            .drawBehind {
+                // Сверху слева — фиолетовое, справа сверху — индиго.
+                // Радиус больше экрана: край пятна не должен попадать в кадр.
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0x2E7C3AED), Color(0x007C3AED)),
+                        center = Offset(size.width * 0.12f, 0f),
+                        radius = size.height * 0.62f,
+                    ),
+                    radius = size.height * 0.62f,
+                    center = Offset(size.width * 0.12f, 0f),
+                )
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0x246366F1), Color(0x006366F1)),
+                        center = Offset(size.width * 0.96f, size.height * 0.10f),
+                        radius = size.height * 0.55f,
+                    ),
+                    radius = size.height * 0.55f,
+                    center = Offset(size.width * 0.96f, size.height * 0.10f),
+                )
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0x1FA5B4FC), Color(0x00A5B4FC)),
+                        center = Offset(size.width * 0.08f, size.height),
+                        radius = size.height * 0.45f,
+                    ),
+                    radius = size.height * 0.45f,
+                    center = Offset(size.width * 0.08f, size.height),
+                )
+            }
+    ) { content() }
+}
 
 @Composable
 fun AppTheme(
@@ -168,14 +228,9 @@ fun AppTheme(
 ) {
     val dynamicColor by ThemeManager.dynamicColorEnabled.collectAsState()
     val context = LocalContext.current
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColor
-        else -> LightColor
-    }
+    // Динамические цвета Android намеренно не используем: они подменяют
+    // палитру обоями телефона, и от фирменного стиля ничего не остаётся.
+    val colorScheme = DarkColor
     val snackbarController = rememberAppSnackbarController()
 
     val view = LocalView.current
@@ -197,10 +252,12 @@ fun AppTheme(
         MaterialTheme(
             colorScheme = colorScheme
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                AppSnackbarBridge(controller = snackbarController)
-                content()
-                AppSnackbarHost(hostState = snackbarController.hostState)
+            AuroraBackground {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AppSnackbarBridge(controller = snackbarController)
+                    content()
+                    AppSnackbarHost(hostState = snackbarController.hostState)
+                }
             }
         }
     }
