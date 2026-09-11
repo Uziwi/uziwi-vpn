@@ -87,7 +87,7 @@ jobs:
       # Телефоны почти все arm64. Остальные сборки тоже кладём —
       # вдруг у кого-то старое устройство.
       - name: Выложить APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: success()
         with:
           name: UziwiVPN-apk
