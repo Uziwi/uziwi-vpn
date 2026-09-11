@@ -109,13 +109,13 @@ private val DarkColor = darkColorScheme(
     inversePrimary = Color(0xFF4F46E5),
     scrim = Color(0xFF000000),
     surfaceTint = Color(0xFF6366F1),
-)
-    surfaceTint = Color(0xFFC0C0C0), // Silver Gray
-    surfaceContainerLowest = Color(0xFF0F0F12), // Near Black
-    surfaceContainerLow = Color(0xFF1A191D), // Dark Gray
-    surfaceContainer = Color(0xFF1E1D21), // Dark Gray
-    surfaceContainerHigh = Color(0xFF282729), // Dark Gray
-    surfaceContainerHighest = Color(0xFF333234), // Dark Gray
+    // Слои «стекла»: чем выше элемент, тем светлее подложка.
+    // Все полупрозрачные (0xB3 ≈ 70%), чтобы сквозь них читался градиент.
+    surfaceContainerLowest = Color(0xB30B0A1C),
+    surfaceContainerLow = Color(0xB3121030),
+    surfaceContainer = Color(0xB3161436),
+    surfaceContainerHigh = Color(0xB31D1A44),
+    surfaceContainerHighest = Color(0xB3252152),
 )
 
 // Semantic Colors
@@ -226,8 +226,6 @@ fun AppTheme(
     darkTheme: Boolean = resolveDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val dynamicColor by ThemeManager.dynamicColorEnabled.collectAsState()
-    val context = LocalContext.current
     // Динамические цвета Android намеренно не используем: они подменяют
     // палитру обоями телефона, и от фирменного стиля ничего не остаётся.
     val colorScheme = DarkColor
