@@ -3,6 +3,7 @@ package com.v2ray.ang.ui.compose
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,9 +19,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.v2ray.ang.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -176,49 +177,34 @@ fun resolveDarkTheme(): Boolean {
 
 val LocalDarkTheme = compositionLocalOf { false }
 
-/** Фон Uziwi: тёмная основа и два пятна северного сияния по углам.
+/** Фон Uziwi: тот самый космос из мини-приложения.
  *
- * Рисуется один раз под всем содержимым. Не картинка и не анимация —
- * два радиальных градиента: это ничего не весит, не греет телефон
- * и выглядит одинаково на любом экране. */
+ * Это НЕ перерисовка «по мотивам», а тот же самый кадр: картинка
+ * отрисована тем же шейдером, которым мини-приложение рисует фон,
+ * и сохранена в 1080×2400. Поэтому приложение и сайт выглядят
+ * одинаково — не похоже, а именно одинаково.
+ *
+ * Почему картинкой, а не живым шейдером: живые шейдеры (AGSL) Android
+ * умеет только с 13-й версии, а приложение работает начиная с 7-й.
+ * Картинка идёт на всём, весит 114 КБ, не ест батарею и не греет
+ * телефон. Движение — звёзды, комета, вращение планет — можно добавить
+ * отдельно и только для новых Android.
+ *
+ * `ContentScale.Crop` обязателен: экраны бывают разной вытянутости,
+ * и картинку надо обрезать по краям, а не растягивать — растянутые
+ * планеты становятся яйцами.
+ */
 @Composable
 private fun AuroraBackground(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF08081A))
-            .drawBehind {
-                // Сверху слева — фиолетовое, справа сверху — индиго.
-                // Радиус больше экрана: край пятна не должен попадать в кадр.
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0x2E7C3AED), Color(0x007C3AED)),
-                        center = Offset(size.width * 0.12f, 0f),
-                        radius = size.height * 0.62f,
-                    ),
-                    radius = size.height * 0.62f,
-                    center = Offset(size.width * 0.12f, 0f),
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0x246366F1), Color(0x006366F1)),
-                        center = Offset(size.width * 0.96f, size.height * 0.10f),
-                        radius = size.height * 0.55f,
-                    ),
-                    radius = size.height * 0.55f,
-                    center = Offset(size.width * 0.96f, size.height * 0.10f),
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0x1FA5B4FC), Color(0x00A5B4FC)),
-                        center = Offset(size.width * 0.08f, size.height),
-                        radius = size.height * 0.45f,
-                    ),
-                    radius = size.height * 0.45f,
-                    center = Offset(size.width * 0.08f, size.height),
-                )
-            }
-    ) { content() }
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(R.drawable.uziwi_sky),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        content()
+    }
 }
 
 @Composable
